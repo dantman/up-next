@@ -35,5 +35,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Workbox
+sw.js
+sw.js.map
+workbox-*.js
+workbox-*.js.map
+
 # Editors
 .vscode/settings.json
