@@ -1,5 +1,5 @@
 import invariant from 'invariant';
-import NextAuth from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import { z } from 'zod';
 
 const UserQuery = /* GraphQL */ `
@@ -31,7 +31,7 @@ const UserQueryResultSpec = z.object({
 	}),
 });
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
 	providers: [
 		{
 			id: 'anilist',
@@ -64,7 +64,7 @@ const handler = NextAuth({
 			},
 			idToken: false,
 			checks: ['pkce', 'state'],
-			profile(profile) {
+			profile(profile, tokens) {
 				const { data } = UserQueryResultSpec.parse(profile);
 				return data.Viewer;
 			},
@@ -72,6 +72,20 @@ const handler = NextAuth({
 			clientSecret: process.env.ANILIST_CLIENT_SECRET,
 		},
 	],
-});
+	callbacks: {
+		async jwt({ token, account }) {
+			if (account) {
+				token.aniListAccessToken = account.access_token;
+			}
+			return token;
+		},
+		async session({ session, token }) {
+			session.aniListAccessToken = token.aniListAccessToken;
+			return session;
+		},
+	},
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
