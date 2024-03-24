@@ -1,6 +1,11 @@
 {
 	"compilerOptions": {
-		"lib": ["dom", "dom.iterable", "esnext"],
+		"target": "ES2015",
+		"lib": [
+			"dom",
+			"dom.iterable",
+			"esnext"
+		],
 		"allowJs": true,
 		"skipLibCheck": true,
 		"strict": true,
@@ -18,7 +23,9 @@
 			}
 		],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": [
+				"./src/*"
+			]
 		}
 	},
 	"include": [
@@ -28,5 +35,7 @@
 		".next/types/**/*.ts",
 		"next.config.mjs"
 	],
-	"exclude": ["node_modules"]
+	"exclude": [
+		"node_modules"
+	]
 }
