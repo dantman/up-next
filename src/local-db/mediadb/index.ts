@@ -1,4 +1,7 @@
+import 'client-only';
+import { Dexie, DexieOptions, Table } from 'dexie';
 import { MediaFormat, MediaSeason, MediaStatus } from '../../anilist-client';
+import { DB_PREFIX } from '../prefix';
 
 export interface MediaData {
 	id: number;
@@ -38,3 +41,18 @@ export interface MediaData {
 	popularity: number | null;
 	trending: number | null;
 }
+
+export class MediaDB extends Dexie {
+	// Tables is added by dexie when declaring the stores()
+	// We just tell the typing system this is the case
+	media!: Table<MediaData>;
+
+	constructor(options?: DexieOptions) {
+		super(DB_PREFIX + 'media', options);
+		this.version(1).stores({
+			media: `&id,updatedAt,format,status,type`,
+		});
+	}
+}
+
+export const mediaDB = new MediaDB({ autoOpen: true });

@@ -1,0 +1,27 @@
+{
+	"Dexie DB": {
+		"prefix": "dexiedb",
+		"scope": "typescript",
+		"body": [
+			"import 'client-only';",
+			"import { Dexie, DexieOptions, Table } from 'dexie';",
+			"import { DB_PREFIX } from '../prefix';",
+			"",
+			"export class ${1:${TM_FILENAME_BASE}} extends Dexie {",
+			"\t// Tables is added by dexie when declaring the stores()",
+			"\t// We just tell the typing system this is the case",
+			"\t${3:tableName}!: Table<${5:TableItemType}>;",
+			"",
+			"\tconstructor(options?: DexieOptions) {",
+			"\t\tsuper(DB_PREFIX + '${2:<DATABASE_NAME>}', options);",
+
+			"\t\tthis.version(1).stores({",
+			"\t\t\t${3:tableName}: `${4:++id}`,",
+			"\t\t});",
+			"\t}",
+			"}",
+			"",
+		],
+		"description": "A typed Dexie DB class",
+	},
+}

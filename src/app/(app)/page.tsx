@@ -1,4 +1,5 @@
 'use client';
+import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import invariant from 'invariant';
 import { useEffect } from 'react';
@@ -7,7 +8,11 @@ import {
 	fuzzyDateToIsoDate,
 	withoutNulls,
 } from '../../anilist-client';
-import { MediaData } from '../../local-db/mediadb';
+import { DialogIconHeader } from '../../framework/dialog/DialogIconHeader';
+import { DialogMessageContainer } from '../../framework/dialog/DialogMessageContainer';
+import { DialogShell } from '../../framework/dialog/DialogShell';
+import { DialogTitle } from '../../framework/dialog/DialogTitle';
+import { MediaData, mediaDB } from '../../local-db/mediadb';
 import { MetaLogin } from '../../local-db/metadb';
 import { useActiveLogin } from '../../login-state/ActiveLogin';
 
@@ -64,7 +69,7 @@ export default function Home() {
 			: { enabled: false, queryKey: [], queryFn: () => null },
 	);
 
-	const { mutate: fullSync } = useMutation({
+	const { mutate: fullSync, isPending: isFullSyncPending } = useMutation({
 		mutationFn: async (login: MetaLogin) => {
 			console.log({ login });
 			const { Viewer, MediaListCollection } = await anilist.query({
@@ -192,66 +197,63 @@ export default function Home() {
 				},
 			});
 
-			invariant(chunkData.Page?.media, 'Expected bulk fetch to return media');
+			invariant(chunkData?.Page?.media, 'Expected bulk fetch to return media');
 			invariant(
 				!chunkData.Page?.pageInfo?.hasNextPage,
 				'Bulk media fetching should not paginate',
 			);
 			const { media } = chunkData.Page;
-			console.log(
-				media
-					.filter((media) => !!media)
-					.map(function (media): MediaData | null {
-						if (!media) return null;
+			const bulkMedia = withoutNulls(media).map(function (media): MediaData {
+				invariant(media.title, 'Expected media to have a title');
 
-						invariant(media.title, 'Expected media to have a title');
-
-						return {
-							id: media.id,
-							updatedAt: media.updatedAt,
-							siteUrl: media.siteUrl,
-							format: media.format,
-							status: media.status,
-							title: {
-								romaji: media.title.romaji,
-								english: media.title.english,
-								native: media.title.native,
-							},
-							synonyms: withoutNulls(media.synonyms),
-							description: media.description,
-							coverImage: media.coverImage
-								? {
-										color: media.coverImage.color,
-										medium: media.coverImage.medium,
-										large: media.coverImage.large,
-									}
-								: null,
-							bannerImage: media.bannerImage,
-							season: media.season,
-							seasonYear: media.seasonYear,
-							startDate: media.startDate
-								? fuzzyDateToIsoDate(media.startDate)
-								: null,
-							endDate: media.endDate ? fuzzyDateToIsoDate(media.endDate) : null,
-							episodes: media.episodes,
-							duration: media.duration,
-							hashtag: media.hashtag,
-							nextAiringEpisode: media.nextAiringEpisode
-								? {
-										id: media.nextAiringEpisode.id,
-										airingAt: media.nextAiringEpisode.airingAt,
-										timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
-										episode: media.nextAiringEpisode.episode,
-									}
-								: null,
-							genres: withoutNulls(media.genres),
-							averageScore: media.averageScore,
-							meanScore: media.meanScore,
-							popularity: media.popularity,
-							trending: media.trending,
-						};
-					}),
-			);
+				return {
+					id: media.id,
+					updatedAt: media.updatedAt,
+					siteUrl: media.siteUrl,
+					format: media.format,
+					status: media.status,
+					title: {
+						romaji: media.title.romaji,
+						english: media.title.english,
+						native: media.title.native,
+					},
+					synonyms: withoutNulls(media.synonyms),
+					description: media.description,
+					coverImage: media.coverImage
+						? {
+								color: media.coverImage.color,
+								medium: media.coverImage.medium,
+								large: media.coverImage.large,
+							}
+						: null,
+					bannerImage: media.bannerImage,
+					season: media.season,
+					seasonYear: media.seasonYear,
+					startDate: media.startDate
+						? fuzzyDateToIsoDate(media.startDate)
+						: null,
+					endDate: media.endDate ? fuzzyDateToIsoDate(media.endDate) : null,
+					episodes: media.episodes,
+					duration: media.duration,
+					hashtag: media.hashtag,
+					nextAiringEpisode: media.nextAiringEpisode
+						? {
+								id: media.nextAiringEpisode.id,
+								airingAt: media.nextAiringEpisode.airingAt,
+								timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
+								episode: media.nextAiringEpisode.episode,
+							}
+						: null,
+					genres: withoutNulls(media.genres),
+					averageScore: media.averageScore,
+					meanScore: media.meanScore,
+					popularity: media.popularity,
+					trending: media.trending,
+				};
+			});
+			console.log({ bulkMedia });
+			// await mediaDB.media.bulkGet(mediaIDs)
+			await mediaDB.media.bulkPut(bulkMedia);
 		},
 	});
 
@@ -261,10 +263,33 @@ export default function Home() {
 		}
 	}, [activeLogin, fullSync]);
 
+	// @todo Use these to trigger updates
 	// console.log({ lastUpdatedMediaListEntry, mediaListUpdates });
 
 	return (
 		<>
+			<DialogShell
+				open={isFullSyncPending}
+				onClose={() => {
+					if (isFullSyncPending) {
+						console.warn('Close ignored because full sync is still running');
+					}
+				}}
+				className="bg-yellow-50/90"
+			>
+				<DialogIconHeader
+					bg="bg-yellow-900/10"
+					icon={<ArrowDownOnSquareIcon className="text-black" />}
+				/>
+				<DialogTitle>Syncing from AniList</DialogTitle>
+				<DialogMessageContainer>
+					<p>
+						{
+							"Please wait a bit. We're setting up your local anime database and syncing your watch list from AniList."
+						}{' '}
+					</p>
+				</DialogMessageContainer>
+			</DialogShell>
 			<h1 className="sr-only">Page title</h1>
 			{/* Main 3 column grid */}
 			<div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3 lg:gap-8">
