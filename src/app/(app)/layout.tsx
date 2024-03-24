@@ -7,6 +7,7 @@ import { anilist } from '../../anilist-client';
 import { Footer } from '../../framework/layout/Footer';
 import { Header } from '../../framework/layout/Header';
 import { metaDB } from '../../local-db/metadb';
+import { ActiveLoginContext } from '../../login-state/ActiveLogin';
 
 function useMetaLogins() {
 	const { data: anilistViewerInfo } = useQuery({
@@ -66,20 +67,22 @@ export default function AppLayout({
 	const { activeLogin } = useMetaLogins();
 
 	return (
-		<div className="min-h-full">
-			<Header
-				userHasSession={authProfileInfo?.hasSession}
-				userName={activeLogin?.name}
-				userAvatar={activeLogin?.mediumAvatar}
-				onSignIn={() => signIn('anilist')}
-				onSignOut={() => signOut()}
-			/>
-			<main className="-mt-24 pb-8">
-				<div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-					{children}
-				</div>
-			</main>
-			<Footer />
-		</div>
+		<ActiveLoginContext.Provider value={activeLogin ?? null}>
+			<div className="min-h-full">
+				<Header
+					userHasSession={authProfileInfo?.hasSession}
+					userName={activeLogin?.name}
+					userAvatar={activeLogin?.mediumAvatar}
+					onSignIn={() => signIn('anilist')}
+					onSignOut={() => signOut()}
+				/>
+				<main className="-mt-24 pb-8">
+					<div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
+						{children}
+					</div>
+				</main>
+				<Footer />
+			</div>
+		</ActiveLoginContext.Provider>
 	);
 }
