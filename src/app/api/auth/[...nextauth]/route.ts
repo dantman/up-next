@@ -7,12 +7,6 @@ const UserQuery = /* GraphQL */ `
 		Viewer {
 			id
 			name
-			avatar {
-				large
-				medium
-			}
-			bannerImage
-			siteUrl
 		}
 	}
 `;
@@ -24,9 +18,6 @@ const UserQueryResultSpec = z.object({
 				.int()
 				.transform((id) => String(id)),
 			name: z.string(),
-			// @todo avatar
-			// @todo bannerImage
-			siteUrl: z.string().url(),
 		}),
 	}),
 });
@@ -64,7 +55,7 @@ export const authOptions: NextAuthOptions = {
 			},
 			idToken: false,
 			checks: ['pkce', 'state'],
-			profile(profile, tokens) {
+			profile(profile) {
 				const { data } = UserQueryResultSpec.parse(profile);
 				return data.Viewer;
 			},
@@ -80,6 +71,7 @@ export const authOptions: NextAuthOptions = {
 			return token;
 		},
 		async session({ session, token }) {
+			session.aniListID = token.sub ? Number(token.sub) : undefined;
 			session.aniListAccessToken = token.aniListAccessToken;
 			return session;
 		},

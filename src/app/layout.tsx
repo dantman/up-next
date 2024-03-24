@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import type { Metadata } from 'next';
 // import { Inter } from 'next/font/google';
 import './globals.css';
+import RootProviders from './providers';
 
 // const inter = Inter({ subsets: ['latin'] });
 
@@ -17,7 +18,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" className="h-full bg-gray-100">
-			<body className={clsx('h-full')}>{children}</body>
+			<body className={clsx('h-full')}>
+				<RootProviders>{children}</RootProviders>
+			</body>
 		</html>
 	);
 }

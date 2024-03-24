@@ -5,25 +5,62 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import { Fragment } from 'react';
 
-export interface HeaderProps {}
+export interface HeaderProps {
+	userHasSession?: boolean;
+	userName?: string;
+	userAvatar?: string;
+	onSignIn?: () => void;
+	onSignOut?: () => void;
+}
 
-const user = {
-	name: 'Tom Cook',
-	email: 'tom@example.com',
-	imageUrl:
-		'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-};
 const navigation = [{ name: 'Home', href: '#', current: true }];
-const userNavigation = [
-	{ name: 'Your Profile', href: '#' },
-	{ name: 'Settings', href: '#' },
-	{ name: 'Sign out', href: '#' },
-];
+
+function UserNavigationMenuItem({
+	href,
+	onClick,
+	name,
+}: {
+	href?: string;
+	onClick?: () => void;
+	name: string;
+}) {
+	const ButtonComponent = href ? 'a' : onClick ? 'button' : 'a';
+
+	return (
+		<Menu.Item>
+			{({ active }) => (
+				<ButtonComponent
+					{...(ButtonComponent === 'a' ? { href } : undefined)}
+					onClick={onClick}
+					className={clsx(
+						'block px-4 py-2 text-left text-sm text-gray-700',
+						active ? 'bg-gray-100' : '',
+					)}
+				>
+					{name}
+				</ButtonComponent>
+			)}
+		</Menu.Item>
+	);
+}
 
 /**
  *
  */
 export function Header(props: HeaderProps) {
+	const { userHasSession, userName, userAvatar, onSignIn, onSignOut } = props;
+
+	const userNavigation = [
+		{ name: 'Your Profile', href: '#' },
+		{ name: 'Settings', href: '#' },
+		...(userHasSession === false
+			? [{ name: 'Sign in', onClick: () => onSignIn?.() }]
+			: []),
+		...(userHasSession === true
+			? [{ name: 'Sign out', onClick: () => onSignOut?.() }]
+			: []),
+	];
+
 	return (
 		<Popover as="header" className="bg-indigo-600 pb-24">
 			{({ open }) => (
@@ -59,11 +96,16 @@ export function Header(props: HeaderProps) {
 										<Menu.Button className="relative flex rounded-full bg-white text-sm ring-2 ring-white ring-opacity-20 focus:outline-none focus:ring-opacity-100">
 											<span className="absolute -inset-1.5" />
 											<span className="sr-only">Open user menu</span>
-											<img
-												className="h-8 w-8 rounded-full"
-												src={user.imageUrl}
-												alt=""
-											/>
+											{userAvatar ? (
+												// eslint-disable-next-line @next/next/no-img-element
+												<img
+													className="h-8 w-8 rounded-full"
+													src={userAvatar}
+													alt=""
+												/>
+											) : (
+												<span className="h-8 w-8" />
+											)}
 										</Menu.Button>
 									</div>
 									<Transition
@@ -72,21 +114,9 @@ export function Header(props: HeaderProps) {
 										leaveFrom="transform opacity-100 scale-100"
 										leaveTo="transform opacity-0 scale-95"
 									>
-										<Menu.Items className="absolute -right-2 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+										<Menu.Items className="absolute -right-2 z-10 mt-2 flex w-48 origin-top-right flex-col rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
 											{userNavigation.map((item) => (
-												<Menu.Item key={item.name}>
-													{({ active }) => (
-														<a
-															href={item.href}
-															className={clsx(
-																active ? 'bg-gray-100' : '',
-																'block px-4 py-2 text-sm text-gray-700',
-															)}
-														>
-															{item.name}
-														</a>
-													)}
-												</Menu.Item>
+												<UserNavigationMenuItem key={item.name} {...item} />
 											))}
 										</Menu.Items>
 									</Transition>
@@ -257,18 +287,23 @@ export function Header(props: HeaderProps) {
 										<div className="pb-2 pt-4">
 											<div className="flex items-center px-5">
 												<div className="flex-shrink-0">
-													<img
-														className="h-10 w-10 rounded-full"
-														src={user.imageUrl}
-														alt=""
-													/>
+													{userAvatar ? (
+														// eslint-disable-next-line @next/next/no-img-element
+														<img
+															className="h-10 w-10 rounded-full"
+															src={userAvatar}
+															alt=""
+														/>
+													) : (
+														<span className="h-10 w-10" />
+													)}
 												</div>
 												<div className="ml-3 min-w-0 flex-1">
 													<div className="truncate text-base font-medium text-gray-800">
-														{user.name}
+														{userName}
 													</div>
 													<div className="truncate text-sm font-medium text-gray-500">
-														{user.email}
+														{userName + '@anilist'}
 													</div>
 												</div>
 												<button

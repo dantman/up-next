@@ -7,12 +7,15 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"genql": "genql --endpoint https://graphql.anilist.co --output src/anilist-client/__generated__"
 	},
 	"dependencies": {
 		"@headlessui/react": "^1.7.18",
 		"@heroicons/react": "^2.1.3",
 		"@tailwindcss/forms": "^0.5.7",
+		"@tanstack/react-query": "^5.28.6",
+		"client-only": "^0.0.1",
 		"clsx": "^2.1.0",
 		"graphiql": "^3.1.1",
 		"graphql": "^16.8.1",
@@ -23,10 +26,13 @@
 		"next-pwa": "^5.6.0",
 		"react": "^18",
 		"react-dom": "^18",
+		"server-only": "^0.0.1",
 		"warning": "^4.0.3",
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {
+		"@genql/cli": "^6.3.2",
+		"@parcel/watcher": "^2.4.1",
 		"@types/invariant": "^2.2.37",
 		"@types/next-pwa": "^5.6.9",
 		"@types/node": "^20",
