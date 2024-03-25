@@ -1,6 +1,6 @@
+import Bottleneck from 'bottleneck';
 import ms from 'ms';
 import warning from 'warning';
-import { delay } from '../framework/utils/delay';
 
 function parseLimit(rate: string | null) {
 	if (rate == null) return NaN;
@@ -11,24 +11,14 @@ function parseLimit(rate: string | null) {
 	return parseInt(rate);
 }
 
-// AniList makes clients wait 1 minute after going over their rate limit
-// https://anilist.gitbook.io/anilist-apiv2-docs/overview/rate-limiting
-const WAIT_PERIOD = ms('1 minute');
+const REQUESTS_PER_MINUTE = 30;
+export const limiter = new Bottleneck({
+	minTime: ms('1 minute') / REQUESTS_PER_MINUTE,
+	maxConcurrent: 2,
+});
 
 let clientRateLimitPerMinute = Infinity;
 let requestRemaining = Infinity;
-
-export async function waitRateLimit(): Promise<void> {
-	requestRemaining--;
-
-	// When the requests remaining gets low, wait half the wait limit
-	if (requestRemaining < 60) {
-		console.debug(
-			`Waiting for half the wait period as ${requestRemaining} of ${rateLimitResult} requests have been used`,
-		);
-		await delay(WAIT_PERIOD / 2);
-	}
-}
 
 export function rateLimitResult(headers: Headers) {
 	const rateLimit = parseLimit(headers.get('X-RateLimit-Limit'));

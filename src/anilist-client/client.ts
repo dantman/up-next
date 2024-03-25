@@ -2,7 +2,7 @@ import invariant from 'invariant';
 import { MetaLogin, metaDB } from '../local-db/metadb';
 import { useActiveLoginToken } from '../login-state/ActiveLogin';
 import { Client as AniListClient, createClient } from './__generated__';
-import { rateLimitResult, waitRateLimit } from './rateLimit';
+import { limiter, rateLimitResult } from './rateLimit';
 export type { AniListClient };
 
 export function useAniList() {
@@ -28,28 +28,27 @@ export function getAniListClient(
 	return createClient({
 		url,
 		async fetcher(operation) {
-			console.log(operation);
+			return await limiter.schedule(async () => {
+				const accessToken = await getAccessToken?.();
 
-			await waitRateLimit();
-			const accessToken = await getAccessToken?.();
+				const response = await fetch(url, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Accept: 'application/json',
+						Authorization: 'Bearer ' + accessToken,
+					},
+					body: JSON.stringify(operation),
+				});
 
-			const response = await fetch(url, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'application/json',
-					Authorization: 'Bearer ' + accessToken,
-				},
-				body: JSON.stringify(operation),
+				rateLimitResult(response.headers);
+
+				if (!response.ok) {
+					throw new Error(`${response.statusText}: ${await response.text()}`);
+				}
+
+				return await response.json();
 			});
-
-			rateLimitResult(response.headers);
-
-			if (!response.ok) {
-				throw new Error(`${response.statusText}: ${await response.text()}`);
-			}
-
-			return await response.json();
 		},
 	});
 }

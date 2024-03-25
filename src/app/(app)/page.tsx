@@ -300,7 +300,7 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 	// 		return () => {
 	// 			setTimeout(() => {
 	// 				fullSync(activeLogin);
-	// 			}, 10_000);
+	// 			}, 5_000);
 	// 		};
 	// 	}
 	// }, [activeLogin, fullSync, isFullSyncPending]);
