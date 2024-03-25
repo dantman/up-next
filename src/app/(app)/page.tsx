@@ -2,7 +2,7 @@
 import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import invariant from 'invariant';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
 	fuzzyDateToIsoDate,
 	getAniList,
@@ -79,9 +79,11 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 			: { enabled: false, queryKey: [], queryFn: () => null },
 	);
 
+	const [syncProgress, setSyncProgress] = useState<null | number>(null);
 	const { mutate: fullSync, isPending: isFullSyncPending } = useMutation({
 		mutationFn: async (login: MetaLogin) => {
 			console.log({ login });
+			setSyncProgress(null);
 			const aniList = await getAniList(login);
 			const { Viewer, MediaListCollection } = await aniList.query({
 				Viewer: {
@@ -273,6 +275,16 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 			fullSync(activeLogin);
 		}
 	}, [activeLogin, fullSync]);
+
+	useEffect(() => {
+		if (activeLogin && isFullSyncPending) {
+			return () => {
+				setTimeout(() => {
+					fullSync(activeLogin);
+				}, 60_000);
+			};
+		}
+	}, [activeLogin, fullSync, isFullSyncPending]);
 
 	// @todo Use these to trigger updates
 	// console.log({ lastUpdatedMediaListEntry, mediaListUpdates });
