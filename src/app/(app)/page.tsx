@@ -4,8 +4,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import invariant from 'invariant';
 import { useEffect } from 'react';
 import {
-	anilist,
 	fuzzyDateToIsoDate,
+	getAniList,
 	withoutNulls,
 } from '../../anilist-client';
 import { DialogIconHeader } from '../../framework/dialog/DialogIconHeader';
@@ -15,16 +15,26 @@ import { DialogTitle } from '../../framework/dialog/DialogTitle';
 import { MediaData, mediaDB } from '../../local-db/mediadb';
 import { MetaLogin } from '../../local-db/metadb';
 import { useActiveLogin } from '../../login-state/ActiveLogin';
+import { useLoginToken } from '../../login-state/useLoginToken';
 
 export default function Home() {
 	const activeLogin = useActiveLogin();
+	const token = useLoginToken(activeLogin);
 
+	// @todo Add UI for when user is not loaded
+	// @todo Separate code using the anilist API so the UI can run without the token
+	return activeLogin && token ? (
+		<AuthenticatedHome activeLogin={activeLogin} />
+	) : null;
+}
+
+function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 	const { data: lastUpdatedMediaListEntry } = useQuery(
 		activeLogin
 			? {
 					queryKey: ['LastUpdatedMediaListEntry', activeLogin.id],
-					queryFn: () =>
-						anilist
+					queryFn: async () =>
+						(await getAniList(activeLogin))
 							.query({
 								MediaList: {
 									__args: {
@@ -44,8 +54,8 @@ export default function Home() {
 		activeLogin
 			? {
 					queryKey: ['MediaListUpdates', activeLogin.id],
-					queryFn: () =>
-						anilist.query({
+					queryFn: async () =>
+						(await getAniList(activeLogin)).query({
 							MediaListCollection: {
 								__args: {
 									userId: activeLogin.id,
@@ -72,7 +82,8 @@ export default function Home() {
 	const { mutate: fullSync, isPending: isFullSyncPending } = useMutation({
 		mutationFn: async (login: MetaLogin) => {
 			console.log({ login });
-			const { Viewer, MediaListCollection } = await anilist.query({
+			const aniList = await getAniList(login);
+			const { Viewer, MediaListCollection } = await aniList.query({
 				Viewer: {
 					id: true,
 				},
@@ -136,7 +147,7 @@ export default function Home() {
 			// @todo Find a good way to chunk, what about DataLoader?
 			const CHUNK_SIZE = 50;
 			const chunkIds = mediaIds.slice(0, CHUNK_SIZE);
-			const chunkData = await anilist.query({
+			const chunkData = await aniList.query({
 				Page: {
 					__args: { page: 0, perPage: CHUNK_SIZE },
 					pageInfo: { hasNextPage: true },

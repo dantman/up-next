@@ -2,12 +2,25 @@
 import 'client-only';
 import { createContext, useContext } from 'react';
 import { MetaLogin } from '../local-db/metadb';
+import { MetaLoginAccessTokenState } from './useLoginToken';
 
-export const ActiveLoginContext = createContext<null | MetaLogin>(null);
+export interface ActiveLoginContext {
+	login: MetaLogin | null;
+	token: MetaLoginAccessTokenState | null;
+}
+
+export const ActiveLoginContext = createContext<ActiveLoginContext>({
+	login: null,
+	token: null,
+});
 
 /**
  * Get the currently active MetaLogin
  */
-export function useActiveLogin() {
-	return useContext(ActiveLoginContext);
+export function useActiveLogin(): MetaLogin | null {
+	return useContext(ActiveLoginContext).login;
+}
+
+export function useActiveLoginToken(): MetaLoginAccessTokenState | null {
+	return useContext(ActiveLoginContext).token;
 }

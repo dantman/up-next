@@ -9,16 +9,26 @@ export interface MetaLogin {
 	lastUsed: number;
 }
 
+export interface MetaLoginAccessToken {
+	id: number;
+	expires: number;
+	accessToken: string;
+}
+
 export class MetaDB extends Dexie {
 	// Tables is added by dexie when declaring the stores()
 	// We just tell the typing system this is the case
-	logins!: Table<MetaLogin>;
+	logins!: Table<MetaLogin, number>;
+	accessTokens!: Table<MetaLoginAccessToken, number>;
 
 	constructor(options?: DexieOptions) {
 		super(DB_PREFIX + 'meta', options);
 
 		this.version(1).stores({
 			logins: '&id,lastUsed',
+		});
+		this.version(2).stores({
+			accessTokens: '&id,expires',
 		});
 	}
 }
