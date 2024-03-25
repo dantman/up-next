@@ -31,3 +31,20 @@ body {
 		text-wrap: balance;
 	}
 }
+
+.indeterminate {
+	transform: translateX(0%) scaleX(0);
+	animation: indeterminate 1.8s linear 0.35s infinite;
+}
+
+@keyframes indeterminate {
+	0% {
+		transform: translateX(-50%) scaleX(0.05);
+	}
+	70% {
+		transform: translateX(5%) scaleX(0.2);
+	}
+	100% {
+		transform: translateX(100%) scaleX(0.9);
+	}
+}
