@@ -20,7 +20,7 @@ function useMetaLogins(session: Pick<Session, 'aniListAccessToken'> | null) {
 			? {
 					queryKey: ['AnilistViewerInfo'],
 					queryFn: () =>
-						getAniListClient(accessToken)
+						getAniListClient(() => accessToken)
 							.query({
 								Viewer: {
 									id: true,

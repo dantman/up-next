@@ -2,6 +2,7 @@ import invariant from 'invariant';
 import { MetaLogin, metaDB } from '../local-db/metadb';
 import { useActiveLoginToken } from '../login-state/ActiveLogin';
 import { Client as AniListClient, createClient } from './__generated__';
+import { rateLimitResult, waitRateLimit } from './rateLimit';
 export type { AniListClient };
 
 export function useAniList() {
@@ -20,11 +21,35 @@ export function useAniList() {
 /**
  * Get an AniList client for a known access token
  */
-export function getAniListClient(accessToken: string | null): AniListClient {
+export function getAniListClient(
+	getAccessToken: (() => string | Promise<string>) | null,
+): AniListClient {
+	const url = 'https://graphql.anilist.co';
 	return createClient({
-		url: 'https://graphql.anilist.co',
-		headers: {
-			Authorization: 'Bearer ' + accessToken,
+		url,
+		async fetcher(operation) {
+			console.log(operation);
+
+			await waitRateLimit();
+			const accessToken = await getAccessToken?.();
+
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+					Authorization: 'Bearer ' + accessToken,
+				},
+				body: JSON.stringify(operation),
+			});
+
+			rateLimitResult(response.headers);
+
+			if (!response.ok) {
+				throw new Error(`${response.statusText}: ${await response.text()}`);
+			}
+
+			return await response.json();
 		},
 	});
 }
@@ -33,7 +58,9 @@ export function getAniListClient(accessToken: string | null): AniListClient {
  * Get the AniList client with a login's access token
  */
 export async function getAniList(login: MetaLogin): Promise<AniListClient> {
-	const token = await metaDB.accessTokens.get(login.id);
-	invariant(token, `Could not find token for ${login.id} in MetaDB`);
-	return getAniListClient(token.accessToken);
+	return getAniListClient(async () => {
+		const token = await metaDB.accessTokens.get(login.id);
+		invariant(token, `Could not find token for ${login.id} in MetaDB`);
+		return token.accessToken;
+	});
 }
