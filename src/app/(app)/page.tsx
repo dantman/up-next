@@ -1,6 +1,7 @@
 'use client';
 import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import chunkify from 'chunkify';
 import clsx from 'clsx';
 import invariant from 'invariant';
 import { useEffect, useState } from 'react';
@@ -148,144 +149,150 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 				},
 			});
 
-			// @todo Find a good way to chunk, what about DataLoader?
-			const CHUNK_SIZE = 50;
-			const chunkIds = mediaIds.slice(0, CHUNK_SIZE);
-			const chunkData = await aniList.query({
-				Page: {
-					__args: { page: 0, perPage: CHUNK_SIZE },
-					pageInfo: { hasNextPage: true },
-					media: {
-						__args: { id_in: chunkIds },
-						id: true,
-						updatedAt: true,
-						siteUrl: true,
-						format: true,
-						status: true,
-						title: {
-							romaji: true,
-							english: true,
-							native: true,
-						},
-						synonyms: true,
-						description: true,
-						coverImage: {
-							color: true,
-							medium: true,
-							large: true,
-						},
-						bannerImage: true,
-						season: true,
-						seasonYear: true,
-						startDate: {
-							year: true,
-							month: true,
-							day: true,
-						},
-						endDate: {
-							year: true,
-							month: true,
-							day: true,
-						},
-						episodes: true,
-						duration: true,
-						hashtag: true,
-						nextAiringEpisode: {
-							id: true,
-							airingAt: true,
-							timeUntilAiring: true,
-							episode: true,
-						},
-						genres: true,
-						averageScore: true,
-						meanScore: true,
-						popularity: true,
-						trending: true,
-						// @todo Try and get information out of this in the future
-						// streamingEpisodes: {
-						// 	title: true,
-						// 	thumbnail: true,
-						// 	url: true,
-						// 	site: true,
-						// },
-					},
+			// Sync media in chunks
+			const progress = {
+				mediaTotal: mediaIds.length,
+				mediaDone: 0,
+				get mediaProgress() {
+					return this.mediaDone / this.mediaTotal;
 				},
-			});
-
-			invariant(chunkData?.Page?.media, 'Expected bulk fetch to return media');
-			invariant(
-				!chunkData.Page?.pageInfo?.hasNextPage,
-				'Bulk media fetching should not paginate',
-			);
-			const { media } = chunkData.Page;
-			const bulkMedia = withoutNulls(media).map(function (media): MediaData {
-				invariant(media.title, 'Expected media to have a title');
-
-				return {
-					id: media.id,
-					updatedAt: media.updatedAt,
-					siteUrl: media.siteUrl,
-					format: media.format,
-					status: media.status,
-					title: {
-						romaji: media.title.romaji,
-						english: media.title.english,
-						native: media.title.native,
+				get mediaListProgress() {
+					return 0;
+				},
+				get total() {
+					// For progress bar use
+					// - Media syncing 80%
+					// - User media list syncing 20%
+					return this.mediaProgress * 0.8 + this.mediaListProgress * 0.2;
+				},
+			};
+			const CHUNK_SIZE = 20;
+			for (const chunkIds of chunkify(mediaIds, CHUNK_SIZE)) {
+				const chunkData = await aniList.query({
+					Page: {
+						__args: { page: 0, perPage: CHUNK_SIZE * 2 },
+						pageInfo: { hasNextPage: true },
+						media: {
+							__args: { id_in: chunkIds },
+							id: true,
+							updatedAt: true,
+							siteUrl: true,
+							format: true,
+							status: true,
+							title: {
+								romaji: true,
+								english: true,
+								native: true,
+							},
+							synonyms: true,
+							description: true,
+							coverImage: {
+								color: true,
+								medium: true,
+								large: true,
+							},
+							bannerImage: true,
+							season: true,
+							seasonYear: true,
+							startDate: {
+								year: true,
+								month: true,
+								day: true,
+							},
+							endDate: {
+								year: true,
+								month: true,
+								day: true,
+							},
+							episodes: true,
+							duration: true,
+							hashtag: true,
+							nextAiringEpisode: {
+								id: true,
+								airingAt: true,
+								timeUntilAiring: true,
+								episode: true,
+							},
+							genres: true,
+							averageScore: true,
+							meanScore: true,
+							popularity: true,
+							trending: true,
+							// @todo Try and get information out of this in the future
+							// streamingEpisodes: {
+							// 	title: true,
+							// 	thumbnail: true,
+							// 	url: true,
+							// 	site: true,
+							// },
+						},
 					},
-					synonyms: withoutNulls(media.synonyms),
-					description: media.description,
-					coverImage: media.coverImage
-						? {
-								color: media.coverImage.color,
-								medium: media.coverImage.medium,
-								large: media.coverImage.large,
-							}
-						: null,
-					bannerImage: media.bannerImage,
-					season: media.season,
-					seasonYear: media.seasonYear,
-					startDate: media.startDate
-						? fuzzyDateToIsoDate(media.startDate)
-						: null,
-					endDate: media.endDate ? fuzzyDateToIsoDate(media.endDate) : null,
-					episodes: media.episodes,
-					duration: media.duration,
-					hashtag: media.hashtag,
-					nextAiringEpisode: media.nextAiringEpisode
-						? {
-								id: media.nextAiringEpisode.id,
-								airingAt: media.nextAiringEpisode.airingAt,
-								timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
-								episode: media.nextAiringEpisode.episode,
-							}
-						: null,
-					genres: withoutNulls(media.genres),
-					averageScore: media.averageScore,
-					meanScore: media.meanScore,
-					popularity: media.popularity,
-					trending: media.trending,
-				};
-			});
-			console.log({ bulkMedia });
-			// await mediaDB.media.bulkGet(mediaIDs)
-			await mediaDB.media.bulkPut(bulkMedia);
+				});
 
-			const mediaTotal = mediaIds.length;
-			let mediaDone = 0;
-			mediaDone += chunkIds.length;
-			const mediaProgress = mediaDone / mediaTotal;
+				invariant(
+					chunkData?.Page?.media,
+					'Expected bulk fetch to return media',
+				);
+				invariant(
+					!chunkData.Page?.pageInfo?.hasNextPage,
+					'Bulk media fetching should not paginate',
+				);
+				const { media } = chunkData.Page;
+				const bulkMedia = withoutNulls(media).map(function (media): MediaData {
+					invariant(media.title, 'Expected media to have a title');
 
-			const mediaListProgress = 0;
+					return {
+						id: media.id,
+						updatedAt: media.updatedAt,
+						siteUrl: media.siteUrl,
+						format: media.format,
+						status: media.status,
+						title: {
+							romaji: media.title.romaji,
+							english: media.title.english,
+							native: media.title.native,
+						},
+						synonyms: withoutNulls(media.synonyms),
+						description: media.description,
+						coverImage: media.coverImage
+							? {
+									color: media.coverImage.color,
+									medium: media.coverImage.medium,
+									large: media.coverImage.large,
+								}
+							: null,
+						bannerImage: media.bannerImage,
+						season: media.season,
+						seasonYear: media.seasonYear,
+						startDate: media.startDate
+							? fuzzyDateToIsoDate(media.startDate)
+							: null,
+						endDate: media.endDate ? fuzzyDateToIsoDate(media.endDate) : null,
+						episodes: media.episodes,
+						duration: media.duration,
+						hashtag: media.hashtag,
+						nextAiringEpisode: media.nextAiringEpisode
+							? {
+									id: media.nextAiringEpisode.id,
+									airingAt: media.nextAiringEpisode.airingAt,
+									timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
+									episode: media.nextAiringEpisode.episode,
+								}
+							: null,
+						genres: withoutNulls(media.genres),
+						averageScore: media.averageScore,
+						meanScore: media.meanScore,
+						popularity: media.popularity,
+						trending: media.trending,
+					};
+				});
+				console.log({ bulkMedia });
+				// await mediaDB.media.bulkGet(mediaIDs)
+				await mediaDB.media.bulkPut(bulkMedia);
 
-			// For progress bar use
-			// - Media syncing 80%
-			// - User media list syncing 20%
-			const progress = mediaProgress * 0.8 + mediaListProgress * 0.2;
-			setSyncProgress(progress);
-
-			// await new Promise((resolve) => {
-			// 	setTimeout(resolve, 60_000 * 5);
-			// });
+				progress.mediaDone += chunkIds.length;
+				setSyncProgress(progress.total);
+			}
 		},
 	});
 
@@ -294,16 +301,6 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 			fullSync(activeLogin);
 		}
 	}, [activeLogin, fullSync]);
-
-	// useEffect(() => {
-	// 	if (activeLogin && isFullSyncPending) {
-	// 		return () => {
-	// 			setTimeout(() => {
-	// 				fullSync(activeLogin);
-	// 			}, 5_000);
-	// 		};
-	// 	}
-	// }, [activeLogin, fullSync, isFullSyncPending]);
 
 	// @todo Use these to trigger updates
 	// console.log({ lastUpdatedMediaListEntry, mediaListUpdates });
