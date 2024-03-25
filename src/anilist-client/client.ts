@@ -34,6 +34,8 @@ export function getAniListClient(
 				const response = await fetch(url, {
 					method: 'POST',
 					headers: {
+						'User-Agent':
+							'UpNext/github.com/dantman/up-next ' + navigator.userAgent,
 						'Content-Type': 'application/json',
 						Accept: 'application/json',
 						Authorization: 'Bearer ' + accessToken,
