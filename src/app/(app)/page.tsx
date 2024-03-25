@@ -1,6 +1,7 @@
 'use client';
 import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import invariant from 'invariant';
 import { useEffect, useState } from 'react';
 import {
@@ -12,6 +13,7 @@ import { DialogIconHeader } from '../../framework/dialog/DialogIconHeader';
 import { DialogMessageContainer } from '../../framework/dialog/DialogMessageContainer';
 import { DialogShell } from '../../framework/dialog/DialogShell';
 import { DialogTitle } from '../../framework/dialog/DialogTitle';
+import { styleVariables } from '../../framework/tw-utils/styleVariables';
 import { MediaData, mediaDB } from '../../local-db/mediadb';
 import { MetaLogin } from '../../local-db/metadb';
 import { useActiveLogin } from '../../login-state/ActiveLogin';
@@ -267,6 +269,23 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 			console.log({ bulkMedia });
 			// await mediaDB.media.bulkGet(mediaIDs)
 			await mediaDB.media.bulkPut(bulkMedia);
+
+			const mediaTotal = mediaIds.length;
+			let mediaDone = 0;
+			mediaDone += chunkIds.length;
+			const mediaProgress = mediaDone / mediaTotal;
+
+			const mediaListProgress = 0;
+
+			// For progress bar use
+			// - Media syncing 80%
+			// - User media list syncing 20%
+			const progress = mediaProgress * 0.8 + mediaListProgress * 0.2;
+			setSyncProgress(progress);
+
+			// await new Promise((resolve) => {
+			// 	setTimeout(resolve, 60_000 * 5);
+			// });
 		},
 	});
 
@@ -276,15 +295,15 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 		}
 	}, [activeLogin, fullSync]);
 
-	useEffect(() => {
-		if (activeLogin && isFullSyncPending) {
-			return () => {
-				setTimeout(() => {
-					fullSync(activeLogin);
-				}, 60_000);
-			};
-		}
-	}, [activeLogin, fullSync, isFullSyncPending]);
+	// useEffect(() => {
+	// 	if (activeLogin && isFullSyncPending) {
+	// 		return () => {
+	// 			setTimeout(() => {
+	// 				fullSync(activeLogin);
+	// 			}, 10_000);
+	// 		};
+	// 	}
+	// }, [activeLogin, fullSync, isFullSyncPending]);
 
 	// @todo Use these to trigger updates
 	// console.log({ lastUpdatedMediaListEntry, mediaListUpdates });
@@ -309,8 +328,28 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 					<p>
 						{
 							"Please wait a bit. We're setting up your local anime database and syncing your watch list from AniList."
-						}{' '}
+						}
 					</p>
+
+					<div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+						<div
+							className={clsx(
+								'h-2.5 origin-left rounded-full bg-indigo-600',
+								syncProgress == null
+									? 'indeterminate w-full'
+									: 'w-[--progress-percent]',
+							)}
+							style={styleVariables(
+								{},
+								{
+									'--progress-percent':
+										syncProgress == null
+											? '0%'
+											: (syncProgress * 100).toFixed(4) + '%',
+								},
+							)}
+						></div>
+					</div>
 				</DialogMessageContainer>
 			</DialogShell>
 			<h1 className="sr-only">Page title</h1>
