@@ -24,7 +24,7 @@ export function useAniList() {
 export function getAniListClient(
 	getAccessToken: (() => string | Promise<string>) | null,
 ): AniListClient {
-	const url = 'https://graphql.anilist.co';
+	const url = '/api/anilist/graphql';
 	return createClient({
 		url,
 		async fetcher(operation) {
@@ -34,8 +34,6 @@ export function getAniListClient(
 				const response = await fetch(url, {
 					method: 'POST',
 					headers: {
-						'User-Agent':
-							'UpNext/github.com/dantman/up-next ' + navigator.userAgent,
 						'Content-Type': 'application/json',
 						Accept: 'application/json',
 						Authorization: 'Bearer ' + accessToken,

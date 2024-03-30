@@ -3,10 +3,11 @@ import { Temporal } from '@js-temporal/polyfill';
 import { useQuery } from '@tanstack/react-query';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Session } from 'next-auth';
-import { getSession, signIn, signOut } from 'next-auth/react';
+import { signIn, signOut } from 'next-auth/react';
 import { useEffect, useMemo } from 'react';
 import warning from 'warning';
 import { getAniListClient } from '../../anilist-client';
+import { useNextAuthSessionInfo } from '../../framework/auth/useNextAuthSession';
 import { Footer } from '../../framework/layout/Footer';
 import { Header } from '../../framework/layout/Header';
 import { metaDB } from '../../local-db/metadb';
@@ -61,13 +62,7 @@ function useMetaLogins(session: Pick<Session, 'aniListAccessToken'> | null) {
 }
 
 function useAuthSession() {
-	const { data: authSessionInfo } = useQuery({
-		queryKey: ['AuthSessionInfo'],
-		queryFn: async () => {
-			const session = await getSession();
-			return { ...session, hasSession: !!session };
-		},
-	});
+	const authSessionInfo = useNextAuthSessionInfo();
 
 	useEffect(() => {
 		if (authSessionInfo) {
