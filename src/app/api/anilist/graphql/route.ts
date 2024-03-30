@@ -38,10 +38,10 @@ export async function POST(req: NextRequest) {
 		// Copy some headers from the response
 		// - X-Content-Type-Options
 		// - X-RateLimit-*
-		// - RetryAfter
+		// - Retry-After
 		// - Cf-*
 		if (
-			/^(Content-Type|X-Content-Type-Options|X-RateLimit-.+|RetryAfter|Cf-.+)$/i.test(
+			/^(Content-Type|X-Content-Type-Options|X-RateLimit-.+|Retry-After|Cf-.+)$/i.test(
 				headerName,
 			)
 		) {

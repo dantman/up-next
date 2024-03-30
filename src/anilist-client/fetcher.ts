@@ -1,6 +1,15 @@
 import { BaseFetcher } from './__generated__/runtime/createClient';
 import { limiter, rateLimitResult } from './rateLimit';
 
+export class RateLimitError extends Error {
+	public readonly retryAfterSeconds: number | null;
+
+	constructor(message: string, retryAfterSeconds: number | null) {
+		super(message);
+		this.retryAfterSeconds = retryAfterSeconds;
+	}
+}
+
 /**
  * Make a fetcher to pass to the AniList client
  * - Asynchronously gets access tokens
@@ -32,6 +41,14 @@ export function makeAniListFetcher(
 			});
 
 			rateLimitResult(response.headers);
+
+			if (response.status === 429) {
+				const retryAfter = response.headers.get('Retry-After');
+				throw new RateLimitError(
+					await response.text(),
+					retryAfter ? parseInt(retryAfter) : null,
+				);
+			}
 
 			if (!response.ok) {
 				throw new Error(`${response.statusText}: ${await response.text()}`);
