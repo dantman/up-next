@@ -1,22 +1,9 @@
+import 'client-only';
 import invariant from 'invariant';
 import { MetaLogin, metaDB } from '../local-db/metadb';
-import { useActiveLoginToken } from '../login-state/ActiveLogin';
 import { Client as AniListClient, createClient } from './__generated__';
-import { limiter, rateLimitResult } from './rateLimit';
+import { makeAniListFetcher } from './fetcher';
 export type { AniListClient };
-
-export function useAniList() {
-	const login = useActiveLoginToken();
-	console.log(login);
-	return createClient({
-		url: 'https://graphql.anilist.co',
-		headers: login?.isProbablyValid
-			? {
-					Authorization: 'Bearer ' + login.accessToken,
-				}
-			: undefined,
-	});
-}
 
 /**
  * Get an AniList client for a known access token
@@ -27,29 +14,7 @@ export function getAniListClient(
 	const url = '/api/anilist/graphql';
 	return createClient({
 		url,
-		async fetcher(operation) {
-			return await limiter.schedule(async () => {
-				const accessToken = await getAccessToken?.();
-
-				const response = await fetch(url, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Accept: 'application/json',
-						Authorization: 'Bearer ' + accessToken,
-					},
-					body: JSON.stringify(operation),
-				});
-
-				rateLimitResult(response.headers);
-
-				if (!response.ok) {
-					throw new Error(`${response.statusText}: ${await response.text()}`);
-				}
-
-				return await response.json();
-			});
-		},
+		fetcher: makeAniListFetcher(url, async () => getAccessToken?.() ?? null),
 	});
 }
 

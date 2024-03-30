@@ -2,6 +2,7 @@
 import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import chunkify from 'chunkify';
+import 'client-only';
 import clsx from 'clsx';
 import invariant from 'invariant';
 import { useState } from 'react';
@@ -19,6 +20,7 @@ import { MediaData, mediaDB } from '../../local-db/mediadb';
 import { MetaLogin } from '../../local-db/metadb';
 import { useActiveLogin } from '../../login-state/ActiveLogin';
 import { useLoginToken } from '../../login-state/useLoginToken';
+import { getBulkAnilistMedia } from './actions';
 
 export default function Home() {
 	const activeLogin = useActiveLogin();
@@ -168,76 +170,8 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 			};
 			const CHUNK_SIZE = 20;
 			for (const chunkIds of chunkify(mediaIds, CHUNK_SIZE)) {
-				const chunkData = await aniList.query({
-					Page: {
-						__args: { page: 0, perPage: CHUNK_SIZE * 2 },
-						pageInfo: { hasNextPage: true },
-						media: {
-							__args: { id_in: chunkIds },
-							id: true,
-							updatedAt: true,
-							siteUrl: true,
-							format: true,
-							status: true,
-							title: {
-								romaji: true,
-								english: true,
-								native: true,
-							},
-							synonyms: true,
-							description: true,
-							coverImage: {
-								color: true,
-								medium: true,
-								large: true,
-							},
-							bannerImage: true,
-							season: true,
-							seasonYear: true,
-							startDate: {
-								year: true,
-								month: true,
-								day: true,
-							},
-							endDate: {
-								year: true,
-								month: true,
-								day: true,
-							},
-							episodes: true,
-							duration: true,
-							hashtag: true,
-							nextAiringEpisode: {
-								id: true,
-								airingAt: true,
-								timeUntilAiring: true,
-								episode: true,
-							},
-							genres: true,
-							averageScore: true,
-							meanScore: true,
-							popularity: true,
-							trending: true,
-							// @todo Try and get information out of this in the future
-							// streamingEpisodes: {
-							// 	title: true,
-							// 	thumbnail: true,
-							// 	url: true,
-							// 	site: true,
-							// },
-						},
-					},
-				});
+				const media = await getBulkAnilistMedia(chunkIds);
 
-				invariant(
-					chunkData?.Page?.media,
-					'Expected bulk fetch to return media',
-				);
-				invariant(
-					!chunkData.Page?.pageInfo?.hasNextPage,
-					'Bulk media fetching should not paginate',
-				);
-				const { media } = chunkData.Page;
 				const bulkMedia = withoutNulls(media).map(function (media): MediaData {
 					invariant(media.title, 'Expected media to have a title');
 
