@@ -141,19 +141,22 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 				},
 			};
 
-			const mediaIds = Array.from({
-				[Symbol.iterator]: function* () {
-					for (const mediaList of x) {
-						const media = mediaList.media;
-						if (!media) continue;
-						yield media.id;
-					}
-				},
-			});
+			const mediaIds = new Map<number, number>(
+				Array.from({
+					[Symbol.iterator]: function* () {
+						for (const mediaList of x) {
+							const media = mediaList.media;
+							if (!media) continue;
+							invariant(media.updatedAt, 'updatedAt cannot be null');
+							yield [media.id, media.updatedAt];
+						}
+					},
+				}),
+			);
 
 			// Sync media in chunks
 			const progress = {
-				mediaTotal: mediaIds.length,
+				mediaTotal: mediaIds.size,
 				mediaDone: 0,
 				get mediaProgress() {
 					return this.mediaDone / this.mediaTotal;
@@ -169,8 +172,8 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 				},
 			};
 			const CHUNK_SIZE = 20;
-			for (const chunkIds of chunkify(mediaIds, CHUNK_SIZE)) {
-				const media = await getBulkAnilistMedia(chunkIds);
+			for (const chunkIdEntries of chunkify(mediaIds.entries(), CHUNK_SIZE)) {
+				const media = await getBulkAnilistMedia(new Map(chunkIdEntries));
 
 				const bulkMedia = withoutNulls(media).map(function (media): MediaData {
 					invariant(media.title, 'Expected media to have a title');
@@ -226,7 +229,7 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 				// await mediaDB.media.bulkGet(mediaIDs)
 				await mediaDB.media.bulkPut(bulkMedia);
 
-				progress.mediaDone += chunkIds.length;
+				progress.mediaDone += chunkIdEntries.length;
 				setSyncProgress(progress.total);
 			}
 		},
