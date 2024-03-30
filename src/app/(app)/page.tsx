@@ -4,9 +4,9 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import chunkify from 'chunkify';
 import clsx from 'clsx';
 import invariant from 'invariant';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
-	fuzzyDateToIsoDate,
+	fuzzyDateToIncompleteDate,
 	getAniList,
 	withoutNulls,
 } from '../../anilist-client';
@@ -265,9 +265,11 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 						season: media.season,
 						seasonYear: media.seasonYear,
 						startDate: media.startDate
-							? fuzzyDateToIsoDate(media.startDate)
+							? fuzzyDateToIncompleteDate(media.startDate)
 							: null,
-						endDate: media.endDate ? fuzzyDateToIsoDate(media.endDate) : null,
+						endDate: media.endDate
+							? fuzzyDateToIncompleteDate(media.endDate)
+							: null,
 						episodes: media.episodes,
 						duration: media.duration,
 						hashtag: media.hashtag,
@@ -296,11 +298,13 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 		},
 	});
 
-	useEffect(() => {
-		if (activeLogin) {
-			fullSync(activeLogin);
-		}
-	}, [activeLogin, fullSync]);
+	// useEffect(() => {
+	// 	if (activeLogin) {
+	// 		fullSync(activeLogin);
+	// 	}
+	// }, [activeLogin, fullSync]);
+
+	(window as any).startFullSync = () => fullSync(activeLogin);
 
 	// @todo Use these to trigger updates
 	// console.log({ lastUpdatedMediaListEntry, mediaListUpdates });

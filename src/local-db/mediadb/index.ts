@@ -1,6 +1,11 @@
 import 'client-only';
 import { Dexie, DexieOptions, Table } from 'dexie';
-import { MediaFormat, MediaSeason, MediaStatus } from '../../anilist-client';
+import {
+	MediaFormat,
+	MediaSeason,
+	MediaStatus,
+	PartialDate,
+} from '../../anilist-client';
 import { DB_PREFIX } from '../prefix';
 
 export interface MediaData {
@@ -24,8 +29,8 @@ export interface MediaData {
 	bannerImage: string | null;
 	season: MediaSeason | null;
 	seasonYear: number | null;
-	startDate: string | null;
-	endDate: string | null;
+	startDate: PartialDate | null;
+	endDate: PartialDate | null;
 	episodes: number | null;
 	duration: number | null;
 	hashtag: string | null;
@@ -51,6 +56,11 @@ export class MediaDB extends Dexie {
 		super(DB_PREFIX + 'media', options);
 		this.version(1).stores({
 			media: `&id,updatedAt,format,status,type`,
+		});
+		this.version(2).upgrade(async (tx) => {
+			// FuzzyDate has changed from ISO string to a PartialDate object
+			// this hasn't been published yet so it's simplest to truncate the database.
+			await tx.table('media').clear();
 		});
 	}
 }
