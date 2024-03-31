@@ -15,6 +15,7 @@ import { DialogIconHeader } from '../../framework/dialog/DialogIconHeader';
 import { DialogMessageContainer } from '../../framework/dialog/DialogMessageContainer';
 import { DialogShell } from '../../framework/dialog/DialogShell';
 import { DialogTitle } from '../../framework/dialog/DialogTitle';
+import { unwrapAction } from '../../framework/server-actions/client';
 import { styleVariables } from '../../framework/tw-utils/styleVariables';
 import { MediaData, mediaDB } from '../../local-db/mediadb';
 import { MetaLogin } from '../../local-db/metadb';
@@ -173,7 +174,9 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 			};
 			const CHUNK_SIZE = 20;
 			for (const chunkIdEntries of chunkify(mediaIds.entries(), CHUNK_SIZE)) {
-				const media = await getBulkAnilistMedia(new Map(chunkIdEntries));
+				const media = await unwrapAction(
+					getBulkAnilistMedia(new Map(chunkIdEntries)),
+				);
 
 				const bulkMedia = withoutNulls(media).map(function (media): MediaData {
 					invariant(media.title, 'Expected media to have a title');

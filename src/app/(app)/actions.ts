@@ -4,6 +4,7 @@ import invariant from 'invariant';
 import { unstable_cache } from 'next/cache';
 import { AniListClient } from '../../anilist-client';
 import { getPublicBackendAniListClient } from '../../anilist-client/server';
+import { wrapAction } from '../../framework/server-actions/server';
 
 function makeGetAniListMedia(aniList: AniListClient) {
 	const dl = new DataLoader(
@@ -117,14 +118,16 @@ function makeGetAniListMedia(aniList: AniListClient) {
  *
  * @param queriedMedia A Map of mediaId => lastUpdatedAt
  */
-export async function getBulkAnilistMedia(queriedMedia: Map<number, number>) {
-	const aniList = getPublicBackendAniListClient();
+export const getBulkAnilistMedia = wrapAction(
+	async function getBulkAnilistMedia(queriedMedia: Map<number, number>) {
+		const aniList = getPublicBackendAniListClient();
 
-	const getAniListMedia = makeGetAniListMedia(aniList);
+		const getAniListMedia = makeGetAniListMedia(aniList);
 
-	return await Promise.all(
-		Array.from(queriedMedia.entries(), async ([mediaId, updatedAt]) => {
-			return await getAniListMedia(mediaId, updatedAt);
-		}),
-	);
-}
+		return await Promise.all(
+			Array.from(queriedMedia.entries(), async ([mediaId, updatedAt]) => {
+				return await getAniListMedia(mediaId, updatedAt);
+			}),
+		);
+	},
+);
