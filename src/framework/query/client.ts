@@ -6,6 +6,10 @@ function retry(failureCount: number, error: unknown) {
 	return false;
 }
 
+function onError(error: unknown) {
+	console.error(error);
+}
+
 export const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
@@ -15,6 +19,7 @@ export const queryClient = new QueryClient({
 		mutations: {
 			throwOnError: true,
 			retry,
+			onError,
 		},
 	},
 });

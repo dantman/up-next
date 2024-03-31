@@ -1,5 +1,8 @@
 'use client';
-import { ArrowDownOnSquareIcon } from '@heroicons/react/24/outline';
+import {
+	ArrowDownOnSquareIcon,
+	ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import chunkify from 'chunkify';
 import 'client-only';
@@ -11,6 +14,7 @@ import {
 	getAniList,
 	withoutNulls,
 } from '../../anilist-client';
+import { AniListError } from '../../anilist-client/errors';
 import { DialogIconHeader } from '../../framework/dialog/DialogIconHeader';
 import { DialogMessageContainer } from '../../framework/dialog/DialogMessageContainer';
 import { DialogShell } from '../../framework/dialog/DialogShell';
@@ -86,7 +90,12 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 	);
 
 	const [syncProgress, setSyncProgress] = useState<null | number>(null);
-	const { mutate: fullSync, isPending: isFullSyncPending } = useMutation({
+	const {
+		mutate: fullSync,
+		isPending: isFullSyncPending,
+		isError: isFullSyncError,
+		error: fullSyncError,
+	} = useMutation({
 		mutationFn: async (login: MetaLogin) => {
 			console.log({ login });
 			setSyncProgress(null);
@@ -236,6 +245,7 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 				setSyncProgress(progress.total);
 			}
 		},
+		throwOnError: false,
 	});
 
 	// useEffect(() => {
@@ -252,45 +262,72 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 	return (
 		<>
 			<DialogShell
-				open={isFullSyncPending}
+				open={isFullSyncPending || isFullSyncError}
 				onClose={() => {
 					if (isFullSyncPending) {
 						console.warn('Close ignored because full sync is still running');
 					}
 				}}
-				className="bg-yellow-50/90"
+				className={isFullSyncError ? 'bg-red-200/90' : 'bg-yellow-50/90'}
 			>
-				<DialogIconHeader
-					bg="bg-yellow-900/10"
-					icon={<ArrowDownOnSquareIcon className="text-black" />}
-				/>
+				{isFullSyncError ? (
+					<DialogIconHeader
+						bg="bg-transparent"
+						icon={<ExclamationTriangleIcon className="text-red-800" />}
+					/>
+				) : (
+					<DialogIconHeader
+						bg="bg-yellow-900/10"
+						icon={<ArrowDownOnSquareIcon className="text-black" />}
+					/>
+				)}
 				<DialogTitle>Syncing from AniList</DialogTitle>
 				<DialogMessageContainer>
-					<p>
-						{
-							"Please wait a bit. We're setting up your local anime database and syncing your watch list from AniList."
-						}
-					</p>
-
-					<div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-						<div
-							className={clsx(
-								'h-2.5 origin-left rounded-full bg-indigo-600',
-								syncProgress == null
-									? 'indeterminate w-full'
-									: 'w-[--progress-percent]',
+					{isFullSyncError ? (
+						<>
+							{fullSyncError instanceof AniListError ? (
+								<p>
+									{
+										'AniList responded with an error while we were syncing your watch list and local anime database.'
+									}
+								</p>
+							) : (
+								<p>
+									{
+										'An unexpected error occurred while syncing your watch list and local anime database from AniList.'
+									}
+								</p>
 							)}
-							style={styleVariables(
-								{},
+						</>
+					) : (
+						<>
+							<p>
 								{
-									'--progress-percent':
+									"Please wait a bit. We're setting up your local anime database and syncing your watch list from AniList."
+								}
+							</p>
+
+							<div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+								<div
+									className={clsx(
+										'h-2.5 origin-left rounded-full bg-indigo-600',
 										syncProgress == null
-											? '0%'
-											: (syncProgress * 100).toFixed(4) + '%',
-								},
-							)}
-						></div>
-					</div>
+											? 'indeterminate w-full'
+											: 'w-[--progress-percent]',
+									)}
+									style={styleVariables(
+										{},
+										{
+											'--progress-percent':
+												syncProgress == null
+													? '0%'
+													: (syncProgress * 100).toFixed(4) + '%',
+										},
+									)}
+								></div>
+							</div>
+						</>
+					)}
 				</DialogMessageContainer>
 			</DialogShell>
 			<h1 className="sr-only">Page title</h1>
