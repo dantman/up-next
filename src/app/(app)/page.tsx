@@ -23,6 +23,10 @@ import { unwrapAction } from '../../framework/server-actions/client';
 import { styleVariables } from '../../framework/tw-utils/styleVariables';
 import { MediaData, mediaDB } from '../../local-db/mediadb';
 import { MetaLogin } from '../../local-db/metadb';
+import {
+	RawUserConsumptionData,
+	openUserConsumptionDB,
+} from '../../local-db/userconsumptiondb';
 import { useActiveLogin } from '../../login-state/ActiveLogin';
 import { useLoginToken } from '../../login-state/useLoginToken';
 import { getBulkAnilistMedia } from './actions';
@@ -125,6 +129,16 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 							priority: true,
 							private: true,
 							hiddenFromStatusLists: true,
+							startedAt: {
+								year: true,
+								month: true,
+								day: true,
+							},
+							completedAt: {
+								year: true,
+								month: true,
+								day: true,
+							},
 							updatedAt: true,
 						},
 					},
@@ -137,7 +151,11 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 				!MediaListCollection.hasNextChunk,
 				'Expected to get everything in one chunk',
 			);
-			const x = {
+
+			/**
+			 * Flatten the nested lists in MediaListCollection to entries in "MediaList" entries
+			 */
+			const allMediaListEntries = {
 				[Symbol.iterator]: function* () {
 					invariant(MediaListCollection.lists, 'Expected a lists response');
 					for (const list of MediaListCollection.lists) {
@@ -151,12 +169,57 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 				},
 			};
 
+			const allMediaEntries = {
+				[Symbol.iterator]: function* () {
+					for (const mediaList of allMediaListEntries) {
+						const media = mediaList.media;
+						if (!media) continue;
+						yield media;
+					}
+				},
+			};
+
+			const userConsumptionDB = openUserConsumptionDB(login.id);
+
+			const rawUserConsumptionEntries = {
+				[Symbol.iterator]: function* () {
+					for (const entry of allMediaListEntries) {
+						if (!entry.media) {
+							console.warn(`Media is missing on MediaList entry #${entry.id}`);
+							continue;
+						}
+
+						invariant(entry.updatedAt != null, 'updatedAt cannot be null');
+						yield {
+							id: entry.id,
+							mediaId: entry?.media.id ?? null,
+							status: entry.status,
+							progress: entry.progress,
+							repeat: entry.repeat,
+							priority: entry.priority,
+							private: entry.private,
+							hiddenFromStatusLists: entry.hiddenFromStatusLists,
+							startedAt: entry.startedAt
+								? fuzzyDateToIncompleteDate(entry.startedAt)
+								: null,
+							completedAt: entry.completedAt
+								? fuzzyDateToIncompleteDate(entry.completedAt)
+								: null,
+							updatedAt: entry.updatedAt,
+						} satisfies RawUserConsumptionData;
+					}
+				},
+			};
+
+			// @note This will not delete entries. Can entries be deleted from AniList lists?
+			await userConsumptionDB.rawUserConsumption.bulkPut(
+				Array.from(rawUserConsumptionEntries),
+			);
+
 			const mediaIds = new Map<number, number>(
 				Array.from({
 					[Symbol.iterator]: function* () {
-						for (const mediaList of x) {
-							const media = mediaList.media;
-							if (!media) continue;
+						for (const media of allMediaEntries) {
 							invariant(media.updatedAt, 'updatedAt cannot be null');
 							yield [media.id, media.updatedAt];
 						}
