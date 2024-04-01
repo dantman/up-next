@@ -62,7 +62,7 @@ export function Header(props: HeaderProps) {
 	];
 
 	return (
-		<Popover as="header" className="bg-indigo-600 pb-24">
+		<Popover as="header" className="bg-indigo-600 pb-24 text-black">
 			{({ open }) => (
 				<>
 					<div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
@@ -93,7 +93,7 @@ export function Header(props: HeaderProps) {
 								{/* Profile dropdown */}
 								<Menu as="div" className="relative ml-4 flex-shrink-0">
 									<div>
-										<Menu.Button className="relative flex rounded-full bg-white text-sm ring-2 ring-white ring-opacity-20 focus:outline-none focus:ring-opacity-100">
+										<Menu.Button className="relative flex rounded-full bg-white text-sm text-black ring-2 ring-white ring-opacity-20 focus:outline-none focus:ring-opacity-100">
 											<span className="absolute -inset-1.5" />
 											<span className="sr-only">Open user menu</span>
 											{userAvatar ? (
@@ -114,7 +114,7 @@ export function Header(props: HeaderProps) {
 										leaveFrom="transform opacity-100 scale-100"
 										leaveTo="transform opacity-0 scale-95"
 									>
-										<Menu.Items className="absolute -right-2 z-10 mt-2 flex w-48 origin-top-right flex-col rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+										<Menu.Items className="absolute -right-2 z-10 mt-2 flex w-48 origin-top-right flex-col rounded-md bg-white py-1 text-black shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
 											{userNavigation.map((item) => (
 												<UserNavigationMenuItem key={item.name} {...item} />
 											))}

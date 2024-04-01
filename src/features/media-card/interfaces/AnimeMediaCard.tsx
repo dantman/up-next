@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Duration } from 'luxon';
 import { mediaDB } from '../../../local-db/mediadb';
 import { RawUserConsumptionData } from '../../../local-db/userconsumptiondb';
+import { useGetTitleLanguage } from '../../user-preferences/hooks/title-language-order';
 import { BackgroundCoveringImage } from '../ui/BackgroundCoveringImage';
 import { MediaCoverImage } from '../ui/MediaCoverImage';
 
@@ -18,7 +19,7 @@ export function AnimeMediaCard(props: AnimeMediaCardProps) {
 	const { mediaId, mediaConsumption } = props;
 	const media = useLiveQuery(() => mediaDB.media.get(mediaId), [mediaId]);
 
-	// @todo Store user preference for what title language to display
+	const getTitleLanguage = useGetTitleLanguage();
 
 	return (
 		<div
@@ -36,9 +37,7 @@ export function AnimeMediaCard(props: AnimeMediaCardProps) {
 					coverImage={media?.coverImage}
 				/>
 				<div className="flex-1 p-2">
-					<p>
-						{media?.title.english || media?.title.romaji || media?.title.native}
-					</p>
+					<p>{getTitleLanguage(media?.title)}</p>
 					<p>
 						{media?.format ?? '?'}
 						{' · '}

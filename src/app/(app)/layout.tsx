@@ -7,6 +7,8 @@ import { signIn, signOut } from 'next-auth/react';
 import { useEffect, useMemo } from 'react';
 import warning from 'warning';
 import { getAniListClient } from '../../anilist-client';
+import { titleLanguageOrderForPreference } from '../../features/user-preferences/helpers/title-language';
+import { TitleLanguageOrderContext } from '../../features/user-preferences/hooks/title-language-order';
 import { useNextAuthSessionInfo } from '../../framework/auth/useNextAuthSession';
 import { Footer } from '../../framework/layout/Footer';
 import { Header } from '../../framework/layout/Header';
@@ -31,6 +33,10 @@ function useMetaLogins(session: Pick<Session, 'aniListAccessToken'> | null) {
 									},
 									bannerImage: true,
 									siteUrl: true,
+									options: {
+										profileColor: true,
+										titleLanguage: true,
+									},
 								},
 							})
 							.then((data) => data.Viewer),
@@ -40,13 +46,16 @@ function useMetaLogins(session: Pick<Session, 'aniListAccessToken'> | null) {
 
 	useEffect(() => {
 		if (anilistViewerInfo) {
-			const { id, name, avatar } = anilistViewerInfo;
+			const { id, name, avatar, options } = anilistViewerInfo;
+			const { profileColor, titleLanguage } = options ?? {};
 
 			metaDB.logins.put({
 				id,
 				name,
 				mediumAvatar: avatar?.medium ?? undefined,
 				lastUsed: Date.now(),
+				profileColor: profileColor ?? undefined,
+				titleLanguage: titleLanguage ?? undefined,
 			});
 		}
 	}, [anilistViewerInfo]);
@@ -106,23 +115,29 @@ export default function AppLayout({
 		[activeLogin, activeToken],
 	);
 
+	const titleLanguageOrder = titleLanguageOrderForPreference(
+		activeLogin?.titleLanguage,
+	);
+
 	return (
 		<ActiveLoginContext.Provider value={activeLoginContext}>
-			<div className="min-h-full">
-				<Header
-					userHasSession={authSessionInfo?.hasSession}
-					userName={activeLogin?.name}
-					userAvatar={activeLogin?.mediumAvatar}
-					onSignIn={() => signIn('anilist')}
-					onSignOut={() => signOut()}
-				/>
-				<main className="-mt-24 pb-8">
-					<div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-						{children}
-					</div>
-				</main>
-				<Footer />
-			</div>
+			<TitleLanguageOrderContext.Provider value={titleLanguageOrder}>
+				<div className="min-h-full">
+					<Header
+						userHasSession={authSessionInfo?.hasSession}
+						userName={activeLogin?.name}
+						userAvatar={activeLogin?.mediumAvatar}
+						onSignIn={() => signIn('anilist')}
+						onSignOut={() => signOut()}
+					/>
+					<main className="-mt-24 pb-8">
+						<div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
+							{children}
+						</div>
+					</main>
+					<Footer />
+				</div>
+			</TitleLanguageOrderContext.Provider>
 		</ActiveLoginContext.Provider>
 	);
 }

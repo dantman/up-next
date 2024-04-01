@@ -1,5 +1,6 @@
 import 'client-only';
 import { Dexie, DexieOptions, Table } from 'dexie';
+import { UserTitleLanguage } from '../../anilist-client';
 import { DB_PREFIX } from '../prefix';
 
 export interface MetaLogin {
@@ -7,6 +8,8 @@ export interface MetaLogin {
 	name: string;
 	mediumAvatar: string | undefined;
 	lastUsed: number;
+	profileColor: string | undefined;
+	titleLanguage: UserTitleLanguage | undefined;
 }
 
 export interface MetaLoginAccessToken {

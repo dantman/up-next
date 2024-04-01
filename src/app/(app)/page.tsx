@@ -418,7 +418,7 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 						<h2 className="sr-only" id="section-1-title">
 							Section title
 						</h2>
-						<div className="overflow-hidden rounded-lg bg-white shadow">
+						<div className="overflow-hidden rounded-lg bg-white text-black shadow">
 							<div className="space-y-2 p-6">
 								{/* Your content */}
 								{currentMediaConsumption?.map((mediaConsumption) => (
@@ -439,7 +439,7 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 						<h2 className="sr-only" id="section-2-title">
 							Section title
 						</h2>
-						<div className="overflow-hidden rounded-lg bg-white shadow">
+						<div className="overflow-hidden rounded-lg bg-white text-black shadow">
 							<div className="p-6">{/* Your content */}</div>
 						</div>
 					</section>
