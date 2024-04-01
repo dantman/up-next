@@ -23,7 +23,9 @@ export function AnimeMediaCard(props: AnimeMediaCardProps) {
 
 	return (
 		<div
-			className={clsx('relative flex flex-row rounded-md bg-indigo-50 shadow')}
+			className={clsx(
+				'relative flex flex-row rounded-md bg-indigo-50 text-black shadow-md',
+			)}
 		>
 			{media?.bannerImage ? (
 				<BackgroundCoveringImage

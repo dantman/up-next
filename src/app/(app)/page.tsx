@@ -418,17 +418,18 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 						<h2 className="sr-only" id="section-1-title">
 							Section title
 						</h2>
-						<div className="overflow-hidden rounded-lg bg-white text-black shadow">
-							<div className="space-y-2 p-6">
-								{/* Your content */}
-								{currentMediaConsumption?.map((mediaConsumption) => (
-									<AnimeMediaCard
-										key={mediaConsumption.id}
-										mediaId={mediaConsumption.mediaId}
-										mediaConsumption={mediaConsumption}
-									/>
-								))}
+						<div className="space-y-2">
+							<div className="overflow-hidden rounded-lg bg-white text-black shadow-md">
+								{/* Your content in a card */}
+								<div className="p-6"></div>
 							</div>
+							{currentMediaConsumption?.map((mediaConsumption) => (
+								<AnimeMediaCard
+									key={mediaConsumption.id}
+									mediaId={mediaConsumption.mediaId}
+									mediaConsumption={mediaConsumption}
+								/>
+							))}
 						</div>
 					</section>
 				</div>
@@ -439,7 +440,7 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 						<h2 className="sr-only" id="section-2-title">
 							Section title
 						</h2>
-						<div className="overflow-hidden rounded-lg bg-white text-black shadow">
+						<div className="overflow-hidden rounded-lg bg-white text-black shadow-md">
 							<div className="p-6">{/* Your content */}</div>
 						</div>
 					</section>
