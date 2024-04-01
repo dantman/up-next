@@ -7,14 +7,17 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import chunkify from 'chunkify';
 import 'client-only';
 import clsx from 'clsx';
+import { useLiveQuery } from 'dexie-react-hooks';
 import invariant from 'invariant';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
+	MediaListStatus,
 	fuzzyDateToIncompleteDate,
 	getAniList,
 	withoutNulls,
 } from '../../anilist-client';
 import { AniListError } from '../../anilist-client/errors';
+import { AnimeMediaCard } from '../../features/media-card/interfaces/AnimeMediaCard';
 import { DialogIconHeader } from '../../framework/dialog/DialogIconHeader';
 import { DialogMessageContainer } from '../../framework/dialog/DialogMessageContainer';
 import { DialogShell } from '../../framework/dialog/DialogShell';
@@ -322,6 +325,19 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 	// @todo Use these to trigger updates
 	// console.log({ lastUpdatedMediaListEntry, mediaListUpdates });
 
+	// -- Media list start
+	const consumptionDB = useMemo(
+		() => openUserConsumptionDB(activeLogin.id),
+		[activeLogin.id],
+	);
+	const currentMediaConsumption = useLiveQuery(() =>
+		consumptionDB.rawUserConsumption
+			.where({ status: 'CURRENT' satisfies MediaListStatus })
+			.limit(20)
+			.reverse()
+			.sortBy('updatedAt'),
+	);
+
 	return (
 		<>
 			<DialogShell
@@ -403,7 +419,16 @@ function AuthenticatedHome({ activeLogin }: { activeLogin: MetaLogin }) {
 							Section title
 						</h2>
 						<div className="overflow-hidden rounded-lg bg-white shadow">
-							<div className="p-6">{/* Your content */}</div>
+							<div className="space-y-2 p-6">
+								{/* Your content */}
+								{currentMediaConsumption?.map((mediaConsumption) => (
+									<AnimeMediaCard
+										key={mediaConsumption.id}
+										mediaId={mediaConsumption.mediaId}
+										mediaConsumption={mediaConsumption}
+									/>
+								))}
+							</div>
 						</div>
 					</section>
 				</div>
